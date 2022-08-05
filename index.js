@@ -1,31 +1,20 @@
 const fs = require("fs");
+const http = require("http");
 
-fs.writeFile(
-  "sample.txt",
-  "Hello World. Welcome to Node.js File System module.",
-  function (err) {
-    if (err) throw err;
-    console.log("File created!");
-  }
-);
+// The file is loaded into the memory from beginning to end and then processed i.e. the callback is executed after loading
+// This will return a response to the client after a delay when the file is large
+const fetchFileData = (req, res) => {
+  fs.readFile("sample.txt", (err, data) => {
+    res.end(data);
+  });
+};
 
-fs.readFile("sample.txt", function (err, data) {
-  if (err) throw err;
-  console.log(data.toString());
-});
+// Streams in Node.js core
+// Streams allow to process data as soon as some bits are fetched
+const fetchFileDataUsingStream = (req, res) => {
+  const stream = fs.createReadStream("sample.txt");
+  stream.pipe(res);
+};
 
-fs.appendFile("sample.txt", " This is my updated content", function (err) {
-  if (err) throw err;
-  console.log("File updated!");
-});
-
-fs.rename("sample.txt", "test.txt", function (err) {
-  if (err) throw err;
-  console.log("File name updated!");
-});
-
-// Deleting files
-fs.unlink("test.txt", function (err) {
-  if (err) throw err;
-  console.log("File test.txt deleted successfully!");
-});
+const server = http.createServer(fetchFileDataUsingStream);
+server.listen(3000);
