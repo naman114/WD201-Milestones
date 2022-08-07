@@ -5,48 +5,29 @@ const readline = require("readline");
 const PORT = 3000;
 
 const createServer = (registrationPageFilePath) => {
-  let homeContent = "";
-  let projectContent = "";
-  let registrationContent = "";
-
-  fs.readFile("pages/home.html", function (err, home) {
-    if (err) throw err;
-    homeContent = home;
-  });
-
-  fs.readFile("pages/project.html", function (err, project) {
-    if (err) throw err;
-    projectContent = project;
-  });
-
-  fs.readFile(registrationPageFilePath, function (err, registration) {
-    if (err) throw err;
-    registrationContent = registration;
-  });
-
   http
     .createServer(function (request, response) {
       let url = request.url;
       response.writeHeader(200, { "Content-Type": "text/html" });
+      let stream;
       switch (url) {
         case "/project":
-          response.write(projectContent);
-          response.end();
+          stream = fs.createReadStream("pages/project.html");
           break;
         case "/registration":
-          response.write(registrationContent);
-          response.end();
+          stream = fs.createReadStream(registrationPageFilePath);
           break;
         default:
-          response.write(homeContent);
-          response.end();
+          stream = fs.createReadStream("pages/home.html");
           break;
       }
+      stream.pipe(response);
     })
     .listen(PORT, () => {
       console.log(`Server started on http://localhost:${PORT}/`);
     });
 };
+
 const lineDetail = readline.createInterface({
   input: process.stdin,
   output: process.stdout,
