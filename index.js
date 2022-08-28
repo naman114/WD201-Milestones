@@ -1,43 +1,101 @@
-const fs = require("fs");
-const http = require("http");
-const readline = require("readline");
+const todoList = () => {
+  all = [];
+  const add = (todoItem) => {
+    all.push(todoItem);
+  };
+  const markAsComplete = (index) => {
+    all[index].completed = true;
+  };
 
-const PORT = 3000;
+  const overdue = () => {
+    return all.filter((todoItem) => getTodoItemStatus(todoItem) === -1);
+  };
 
-const createServer = (registrationPageFilePath) => {
-  http
-    .createServer(function (request, response) {
-      let url = request.url;
-      response.writeHeader(200, { "Content-Type": "text/html" });
-      let stream;
-      switch (url) {
-        case "/project":
-          stream = fs.createReadStream("pages/project.html");
-          break;
-        case "/registration":
-          stream = fs.createReadStream(registrationPageFilePath);
-          break;
-        default:
-          stream = fs.createReadStream("pages/home.html");
-          break;
-      }
-      stream.pipe(response);
-    })
-    .listen(PORT, () => {
-      console.log(`Server started on http://localhost:${PORT}/`);
-    });
+  const dueToday = () => {
+    return all.filter((todoItem) => getTodoItemStatus(todoItem) === 0);
+  };
+
+  const dueLater = () => {
+    return all.filter((todoItem) => getTodoItemStatus(todoItem) === 1);
+  };
+
+  const toDisplayableList = (list) => {
+    return list
+      .map((listItem) => {
+        let todoListText = `[${listItem.completed ? "x" : " "}] ${
+          listItem.title
+        }`;
+
+        const listItemStatus = getTodoItemStatus(listItem);
+        if (listItemStatus === -1 || listItemStatus === 1)
+          todoListText +=
+            " " + new Date(listItem.dueDate).toISOString().split("T")[0];
+
+        return todoListText;
+      })
+      .join("\n");
+  };
+
+  const getTodoItemStatus = (todoItem) => {
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+    const dueDate = new Date(todoItem.dueDate);
+    dueDate.setHours(0, 0, 0, 0);
+
+    if (now.valueOf() === dueDate.valueOf()) return 0; // Due Today
+    else if (now < dueDate) return 1; // Due Later
+
+    return -1; // Overdue
+  };
+
+  return {
+    all,
+    add,
+    markAsComplete,
+    overdue,
+    dueToday,
+    dueLater,
+    toDisplayableList,
+  };
 };
 
-const lineDetail = readline.createInterface({
-  input: process.stdin,
-  output: process.stdout,
-});
+// ####################################### #
+// DO NOT CHANGE ANYTHING BELOW THIS LINE. #
+// ####################################### #
 
-lineDetail.question(
-  "Enter full file path to the registration page (pages/registration.html): ",
-  (path) => {
-    lineDetail.close();
-    path = path.length === 0 ? "pages/registration.html" : path;
-    createServer(path);
-  }
-);
+const todos = todoList();
+
+const formattedDate = (d) => {
+  return d.toISOString().split("T")[0];
+};
+
+var d = new Date();
+const today = formattedDate(d);
+const yesterday = formattedDate(new Date(d.setDate(d.getDate() - 1)));
+const tomorrow = formattedDate(new Date(d.setDate(d.getDate() + 2)));
+
+todos.add({ title: "Submit assignment", dueDate: yesterday, completed: false });
+todos.add({ title: "Pay rent", dueDate: today, completed: true });
+todos.add({ title: "Service Vehicle", dueDate: today, completed: false });
+todos.add({ title: "File taxes", dueDate: tomorrow, completed: false });
+todos.add({ title: "Pay electric bill", dueDate: tomorrow, completed: false });
+
+console.log("My Todo-list\n\n");
+
+console.log("Overdue");
+var overdues = todos.overdue();
+var formattedOverdues = todos.toDisplayableList(overdues);
+console.log(formattedOverdues);
+console.log("\n\n");
+
+console.log("Due Today");
+let itemsDueToday = todos.dueToday();
+let formattedItemsDueToday = todos.toDisplayableList(itemsDueToday);
+console.log(formattedItemsDueToday);
+console.log("\n\n");
+
+console.log("Due Later");
+let itemsDueLater = todos.dueLater();
+let formattedItemsDueLater = todos.toDisplayableList(itemsDueLater);
+console.log(formattedItemsDueLater);
+console.log("\n\n");
